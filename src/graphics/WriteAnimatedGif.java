@@ -1,4 +1,4 @@
-package com;
+package graphics;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -8,7 +8,7 @@ import javax.imageio.*;
 import javax.imageio.metadata.*;
 import javax.imageio.stream.ImageOutputStream;
 
-class WriteAnimatedGif {
+public class WriteAnimatedGif {
 
 	public static void configure(IIOMetadata meta, String delayTime, int imageIndex) {
 

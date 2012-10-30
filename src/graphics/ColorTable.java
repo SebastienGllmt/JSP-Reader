@@ -1,4 +1,4 @@
-package com;
+package graphics;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -20,6 +20,10 @@ public class ColorTable {
 	public ColorTable(String dir){
 		path = new File(dir + "\\" + PALETTE_PATH);
 		readPalette();
+	}
+	
+	public File getPalette(){
+		return path;
 	}
 	
 	private void readPalette(){

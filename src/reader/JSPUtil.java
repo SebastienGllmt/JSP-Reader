@@ -1,4 +1,7 @@
-package com;
+package reader;
+
+import graphics.ColorTable;
+import graphics.WriteAnimatedGif;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -6,8 +9,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -33,14 +36,7 @@ public class JSPUtil {
 	 * @param ctPath - The path of the colour palette to use
 	 */
 	public JSPUtil(File input, String ctPath) {
-		jsp = new JSPReader();
-		colorPath = new File(ctPath);
-		try {
-			jsp.readJSP(input);
-		} catch (IOException e) {
-			System.out.println("Reading error on " + input.getAbsolutePath());
-			e.printStackTrace();
-		}
+		loadUtil(input, new File(ctPath));
 	}
 	
 	/**
@@ -49,18 +45,52 @@ public class JSPUtil {
 	 * @param ctPath - The path of the colour palette to use
 	 */
 	public JSPUtil(String input, String ctPath) {
-		File f = new File(input);
+		loadUtil(new File(input), new File(ctPath));
+	}
+	
+	/**
+	 * Create a new JSP Util
+	 * @param input - The JSP to input
+	 * @param ctPath - The path of the colour palette to use
+	 */
+	public JSPUtil(File input, File ctPath) {
+		loadUtil(input, ctPath);
+	}
+	
+	/**
+	 * Create a new JSP Util
+	 * @param input - The JSP to input
+	 * @param ctPath - The path of the colour palette to use
+	 */
+	public JSPUtil(String input, File ctPath) {
+		loadUtil(new File(input), ctPath);
+	}
+	
+	/**
+	 * Sets up a JSP Util
+	 * @param input - The JSP to input
+	 * @param ctPath - The path of the colour palette to use
+	 */
+	private void loadUtil(File input, File ctPath){
 		jsp = new JSPReader();
-		colorPath = new File(ctPath);
+		colorPath = ctPath;
 		try {
-			jsp.readJSP(f);
+			jsp.readJSP(input);
 		} catch (IOException e) {
-			System.out.println("Reading error on " + f.getAbsolutePath());
+			System.out.println("Reading error on " + input.getAbsolutePath());
 			e.printStackTrace();
 		}
 	}
 
 	/**			Public methods			**/
+	
+	/**
+	 * Writes the edited JSP to a given file
+	 * @param output - the file to output to
+	 */
+	public void writeJSP(String output) {
+		writeJSP(new File(output));
+	}
 	
 	/**
 	 * Writes the edited JSP to a given file
@@ -75,17 +105,27 @@ public class JSPUtil {
 	}
 
 	/**
-	 * Creates a BufferedImages out of a JSP image
-	 * @param picID - the index of the image to convert
+	 * Creates a BufferedImage out of a JSP
+	 * @param picID - The index of the image to convert
+	 * @return
+	 */
+	public BufferedImage createImage(int picID){
+		return createImage(jsp.getWidth(picID), jsp.getHeight(picID), picID);
+	}
+	
+	/**
+	 * Creates a BufferedImages out of a JSP
+	 * @param maxWidth - The max width of the image
+	 * @param maxHeight - The max height of the image
+	 * @param picID - The index of the image to convert
 	 * @return the BufferedImage of the image
 	 */
-	public BufferedImage createImage(int picID) {
-		int imageWidth = jsp.getWidth(picID);
-		int imageHeight = jsp.getHeight(picID);
-		BufferedImage bi = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
+	public BufferedImage createImage(int maxWidth, int maxHeight, int picID) {
+		int width = jsp.getWidth(picID);
+		BufferedImage bi = new BufferedImage(maxWidth, maxHeight, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = bi.createGraphics();
 		g2d.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-		g2d.fillRect(0, 0, imageWidth, imageHeight);
+		g2d.fillRect(0, 0, maxWidth, maxHeight);
 
 		int[] imageContent = jsp.getContent(picID);
 		JSPScanner scan = new JSPScanner(imageContent);
@@ -94,8 +134,8 @@ public class JSPUtil {
 		int color = -1;
 		while ((c = scan.byteStream()) != -1) {
 			int pos = scan.getRealPosition();
-			int x = pos % imageWidth;
-			int y = pos / imageHeight;
+			int x = pos % width;
+			int y = pos / width;
 			
 			if(color != c){
 				color = c;
@@ -151,26 +191,77 @@ public class JSPUtil {
 	}
 	
 	/**
+	 * Writes a gif to a given directory
+	 * @param gifDir - The directory
+	 */
+	public void writeGif(String gifDir){
+		writeGif(gifDir, null, false);
+	}
+	
+	/**
+	 * Writes a gif and corresponding images to a directory
+	 * @param gifDir - Directory for gif
+	 * @param imgDir - Directory for png
+	 */
+	public void writeGif(String gifDir, String imgDir){
+		writeGif(gifDir, imgDir, true);
+	}
+	
+	/**
+	 * Writes a gif and corresponding images to a root directory + extensions
+	 * @param dir - The root directory
+	 * @param gifName - Extension for gif
+	 * @param imgName - Extension for png
+	 * @param PNG - Whether or not to print png
+	 */
+	public void writeGif(String dir, String gifName, String imgName, boolean PNG){
+		writeGif(dir + gifName, dir + imgName, PNG);
+	}
+	
+	/**
+	 * Writes a gif and corresponding images to a root directory + extensions
+	 * @param dir - The root directory
+	 * @param gifName - Extension for gif
+	 * @param imgName - Extension for png
+	 */
+	public void writeGif(String dir, String gifName, String imgName){
+		writeGif(dir + gifName, dir + imgName, true);
+	}
+	
+	/**
 	 * Writes an animated GIF of a JSP
 	 * @param dir - the directory to print to
 	 * @param PNG - whether or not PNG versions should be printed at the same time
 	 */
-	public void writeGif(String dir, boolean PNG) {
+	public void writeGif(String gifDir, String imgDir, boolean PNG) {
 		try {
 			int imageCount = jsp.getImageCount();
 			BufferedImage[] frames = new BufferedImage[imageCount];
 			String[] delayTimes = new String[imageCount];
 
+			
+			int maxWidth = 0;
+			int maxHeight = 0;
+			for(int i=0; i<imageCount; i++){
+				int width = jsp.getWidth(i);
+				int height = jsp.getHeight(i);
+				if(width > maxWidth){
+					maxWidth = width;
+				}
+				if(height > maxHeight){
+					maxHeight = height;
+				}
+			}
 			for (int i = 0; i < imageCount; i++) {
-				BufferedImage bi = createImage(i);
+				BufferedImage bi = createImage(maxWidth, maxHeight, i);
 				frames[i] = bi;
 				delayTimes[i] = "12";
 				if(PNG){
-					printImage(bi, dir, i);
+					printImage(bi, imgDir+".png", i);
 				}
 			}
 
-			File f = new File(dir);
+			File f = new File(gifDir+".gif");
 
 			WriteAnimatedGif.saveAnimate(f, frames, delayTimes);
 		} catch (Exception e) {
@@ -186,13 +277,37 @@ public class JSPUtil {
 		return jsp.getImageCount();
 	}
 
-	/*			Get JSP Reader			*/
+	/*			Get JSP Reader Info			*/
 	
 	/**
 	 * Gets the JSPReader. This is used to append/insert JSPs
 	 */
 	public JSPReader getReader(){
 		return jsp;
+	}
+	
+	public int getSize(int picID){
+		return jsp.getSize(picID);
+	}
+	public int getSize(){
+		int size = 0;
+		for(int i=0; i<jsp.getImageCount();i++){
+			size += jsp.getSize(i);
+		}
+		return size;
+	}
+	
+	public int getHeight(int picID){
+		return jsp.getHeight(picID);
+	}
+	public int getWidth(int picID){
+		return jsp.getWidth(picID);
+	}
+	public int getXOrigine(int picID){
+		return jsp.getXOrigine(picID);
+	}
+	public int getYOrigine(int picID){
+		return jsp.getYOrigine(picID);
 	}
 	
 	/*			Insert images			*/
@@ -827,6 +942,125 @@ public class JSPUtil {
 			invertAllShades(i);
 		}
 	}
+	
+	/*			Random Colour methods			**/
+	
+	/**
+	 * Makes the image have random shades
+	 * @param picID - The index of the image
+	 */
+	public void randomShade(int picID){
+		turnsShadeRandom(0, 31, 0, 31, picID);
+	}
+	/**
+	 * Makes the JSP have random shades
+	 */
+	public void randomShade(){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			randomShade(i);
+		}
+	}
+	/**
+	 * Makes the range of shades have a random shade
+	 * @param minShadeFrom - Min shade to convert
+	 * @param maxShadeFrom - Max shade to convert
+	 * @param minShadeTo - Min shade random
+	 * @param maxShadeTo - Max shade random
+	 * @param picID - The index of the image
+	 */
+	public void randomShade(int minShadeFrom, int maxShadeFrom, int minShadeTo, int maxShadeTo, int picID){
+		turnsShadeRandom(minShadeFrom, maxShadeFrom, minShadeTo, maxShadeTo, picID);
+	}
+	/**
+	 * Makes the range of shades have a random shade
+	 * @param minShadeFrom - Min shade to convert
+	 * @param maxShadeFrom - Max shade to convert
+	 * @param minShadeTo - Min shade random
+	 * @param maxShadeTo - Max shade random
+	 */
+	public void randomShade(int minShadeFrom, int maxShadeFrom, int minShadeTo, int maxShadeTo){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			turnsShadeRandom(minShadeFrom, maxShadeFrom, minShadeTo, maxShadeTo, i);
+		}
+	}
+	
+	/**
+	 * Gives the image a random range
+	 * @param picID
+	 */
+	public void randomRange(int picID){
+		turnsRangeRandom(0, 7, 0, 7, picID);
+	}
+	/**
+	 * Gives the JSP a random range
+	 */
+	public void randomRange(){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			randomRange(i);
+		}
+	}
+	/**
+	 * Makes a range of colours in an image turn into a random range
+	 * @param minRangeFrom - Min range to convert
+	 * @param maxRangeFrom - Max range to convert
+	 * @param minRangeTo - Min range random
+	 * @param maxRangeTo - Max range random
+	 * @param picID - The index of the image
+	 */
+	public void randomRange(int minRangeFrom, int maxRangeFrom, int minRangeTo, int maxRangeTo, int picID){
+		turnsRangeRandom(minRangeFrom, maxRangeFrom, minRangeTo, maxRangeTo, picID);
+	}
+	/**
+	 * Makes a range of colours in a JSP turn into a random range
+	 * @param minRangeFrom - Min range to convert
+	 * @param maxRangeFrom - Max range to convert
+	 * @param minRangeTo - Min range random
+	 * @param maxRangeTo - Max range random
+	 */
+	public void randomRange(int minRangeFrom, int maxRangeFrom, int minRangeTo, int maxRangeTo){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			randomRange(minRangeFrom, maxRangeFrom, minRangeTo, maxRangeTo, i);
+		}
+	}
+	
+	/**
+	 * Gives an image random colours
+	 * @param picID - The index of the image
+	 */
+	public void randomColors(int picID){
+		turnsColorsRandom(0, 255, 0, 255, picID);
+	}
+	/**
+	 * Makes a JSP have random colours
+	 */
+	public void randomColors(){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			randomColors(i);
+		}
+	}
+	/**
+	 * Makes an image convert a colour range to random colours
+	 * @param minColFrom - Min colour to convert
+	 * @param maxColFrom - Max colour to convert
+	 * @param minColTo - Min colour random
+	 * @param maxColTo - Max colour random
+	 * @param picID - The index of the image
+	 */
+	public void randomColors(int minColFrom, int maxColFrom, int minColTo, int maxColTo, int picID){
+		turnsColorsRandom(minColFrom, maxColFrom, minColTo, maxColTo, picID);
+	}
+	/**
+	 * Makes a JSP convert a colour range to random colours
+	 * @param minColFrom - Min colour to convert
+	 * @param maxColFrom - Max colour to convert
+	 * @param minColTo - Min colour random
+	 * @param maxColTo - Max colour random
+	 */
+	public void randomColors(int minColFrom, int maxColFrom, int minColTo, int maxColTo){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			turnsColorsRandom(minColFrom, maxColFrom, minColTo, maxColTo, i);
+		}
+	}
 
 	/**			Private methods			**/
 	
@@ -1128,6 +1362,58 @@ public class JSPUtil {
 		jsp.setContent(imageContent, picID);
 	}
 
+	private void turnsShadeRandom(int minShadeFrom, int maxShadeFrom, int minShadeTo, int maxShadeTo, int picID){
+		if(minShadeFrom >= maxShadeFrom || minShadeTo >= maxShadeTo){
+			return;
+		}
+		int[] imageContent = jsp.getContent(picID);
+		JSPScanner scan = new JSPScanner(imageContent);
+		int c;
+		Random r = new Random();
+		while ((c = scan.byteStream()) != -1){
+			int shade = c%32;
+			if(shade >= minShadeFrom && shade<= maxShadeFrom){
+				int newRange = r.nextInt(maxShadeTo-minShadeTo+1) + minShadeTo;
+				imageContent[scan.getIndex()] = applyLight(c, newRange);
+			}
+		}
+		jsp.setContent(imageContent, picID);
+	}
+	
+	private void turnsRangeRandom(int minRangeFrom, int maxRangeFrom, int minRangeTo, int maxRangeTo, int picID){
+		if(minRangeFrom >= maxRangeFrom || minRangeTo >= maxRangeTo){
+			return;
+		}
+		int[] imageContent = jsp.getContent(picID);
+		JSPScanner scan = new JSPScanner(imageContent);
+		int c;
+		Random r = new Random();
+		while ((c = scan.byteStream()) != -1){
+			int range = c/32;
+			if(range >= minRangeFrom && range<= maxRangeFrom){
+				int newShade = r.nextInt(maxRangeTo-minRangeTo+1) + minRangeTo;
+				imageContent[scan.getIndex()] = newShade;
+			}
+		}
+		jsp.setContent(imageContent, picID);
+	}
+	
+	private void turnsColorsRandom(int minColFrom, int maxColFrom, int minColTo, int maxColTo, int picID){
+		if(minColFrom >= maxColFrom || minColTo >= maxColTo){
+			return;
+		}
+		int[] imageContent = jsp.getContent(picID);
+		JSPScanner scan = new JSPScanner(imageContent);
+		int c;
+		Random r = new Random();
+		while ((c = scan.byteStream()) != -1){
+			if(c >= minColFrom && c<= maxColFrom){
+				imageContent[scan.getIndex()] = r.nextInt(maxColTo-minColTo+1) + minColTo;
+			}
+		}
+		jsp.setContent(imageContent, picID);
+	}
+	
 	/**			Intermediate methods			**/
 
 	/**

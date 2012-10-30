@@ -1,4 +1,4 @@
-package com;
+package reader;
 
 public class JSPScanner {
 
