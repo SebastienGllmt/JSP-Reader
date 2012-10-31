@@ -29,6 +29,21 @@ public class JSPUtil {
 
 	private JSPReader jsp;
 	File colorPath;
+	
+	/**
+	 * Create a new JSP Util with no colour palette
+	 * @param input - The JSP to input
+	 */
+	public JSPUtil(File input){
+		loadUtil(input, null);
+	}
+	/**
+	 * Create a new JSP Util with no colour palette
+	 * @param input - The JSP to input
+	 */
+	public JSPUtil(String input){
+		loadUtil(new File(input), null);
+	}
 
 	/**
 	 * Create a new JSP Util
@@ -1088,6 +1103,8 @@ public class JSPUtil {
 			int headPosition = scan.getIndex() + offset;
 			int count=0;
 			int painted=0;
+			int toBlankPosition=0;
+			int toBlank=0;
 			while(scan.hasNextByte()){
 				count++;
 				int value = scan.nextByte();
@@ -1103,14 +1120,32 @@ public class JSPUtil {
 						painted=0;
 					}
 					imageContent.remove(scan.getIndex()+offset); //removes the colour
-					imageContent.add(scan.getIndex()+offset, 129); //adds 1 blank pixel
+					if(toBlankPosition == 0){
+						toBlankPosition = scan.getIndex()+offset;
+						imageContent.add(scan.getIndex()+offset, 129); //adds 1 blank pixel
+					}else{
+						offset--;
+					}
+					toBlank++;
 					if(length - count > 0){
 						offset++;
 						imageContent.add(scan.getIndex()+offset, (length - count));
 						headPosition = scan.getIndex() + offset;
 					}
 				}else{
+					if(toBlankPosition != 0){
+						imageContent.set(toBlankPosition, 128+toBlank);
+						toBlank=0;
+						toBlankPosition=0;
+					}
 					painted++;
+				}
+				if(!scan.hasNextByte()){
+					if(toBlankPosition != 0){
+						imageContent.set(toBlankPosition, 128+toBlank);
+						toBlank=0;
+						toBlankPosition=0;
+					}
 				}
 			}
 		}
