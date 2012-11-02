@@ -31,18 +31,26 @@ public class JSPUtil {
 	File colorPath;
 	
 	/**
-	 * Create a new JSP Util with no colour palette
+	 * Create a new JSP Util with either no colour palette or no JSP
 	 * @param input - The JSP to input
 	 */
-	public JSPUtil(File input){
-		loadUtil(input, null);
+	public JSPUtil(File input, boolean isJSP){
+		if(isJSP){
+			loadUtil(input, null);
+		}else{
+			loadUtil(null, input);
+		}
 	}
 	/**
-	 * Create a new JSP Util with no colour palette
+	 * Create a new JSP Util with either no colour palette or no JSP
 	 * @param input - The JSP to input
 	 */
-	public JSPUtil(String input){
-		loadUtil(new File(input), null);
+	public JSPUtil(String input, boolean isJSP){
+		if(isJSP){
+			loadUtil(new File(input), null);
+		}else{
+			loadUtil(null, new File(input));
+		}
 	}
 
 	/**
@@ -90,9 +98,29 @@ public class JSPUtil {
 		jsp = new JSPReader();
 		colorPath = ctPath;
 		try {
+			if(input != null){
+				jsp.readJSP(input);
+			}
+		} catch (IOException e) {
+			System.out.println("Reading error on " + input.getAbsolutePath());
+			e.printStackTrace();
+		}
+	}
+	
+	public void loadJSP(File input){
+		try {
 			jsp.readJSP(input);
 		} catch (IOException e) {
 			System.out.println("Reading error on " + input.getAbsolutePath());
+			e.printStackTrace();
+		}
+	}
+	public void loadJSP(String input){
+		File f = new File(input);
+		try{
+			jsp.readJSP(f);
+		} catch (IOException e){
+			System.out.println("Reading error on " + f.getAbsolutePath());
 			e.printStackTrace();
 		}
 	}
@@ -1089,65 +1117,67 @@ public class JSPUtil {
 	private void renderTransparent(int minCol, int maxCol, boolean isShade, int picID){
 		int[] contentArray = jsp.getContent(picID);
 		List<Integer> imageContent = new ArrayList<Integer>();
-		for(int i : contentArray){
-			imageContent.add(i);
-		}
+		List<Integer> tempContent = new ArrayList<Integer>();
 		jsp.getContent(picID);
-		int offset=0;
 		JSPScanner scan = new JSPScanner(contentArray);
 		while (scan.hasNext()) {
 			if(!scan.hasNextByte()){
 				scan.skipHead();
+				imageContent.addAll(scan.getHead());
 			}
 			int length = scan.getLength();
-			int headPosition = scan.getIndex() + offset;
+			tempContent.add(length);
+			int headPosition = 0;
 			int count=0;
 			int painted=0;
-			int toBlankPosition=0;
+			int toBlankPosition = -1;
 			int toBlank=0;
+			int offset=0;
 			while(scan.hasNextByte()){
 				count++;
 				int value = scan.nextByte();
+				tempContent.add(value);
 				if(isShade){ //if shade instead of colour
 					value %= 32;
 				}
+				//if(false){
 				if(value >= minCol && value <= maxCol){
 					if(painted == 0){
-						imageContent.remove(headPosition);
+						tempContent.remove(headPosition);
 						offset--;
 					}else{
-						imageContent.set(headPosition, painted);
+						tempContent.set(headPosition, painted);
 						painted=0;
 					}
-					imageContent.remove(scan.getIndex()+offset); //removes the colour
-					if(toBlankPosition == 0){
-						toBlankPosition = scan.getIndex()+offset;
-						imageContent.add(scan.getIndex()+offset, 129); //adds 1 blank pixel
+					tempContent.remove(count+offset); //removes the colour
+					if(toBlankPosition == -1){
+						toBlankPosition = count+offset;
+						tempContent.add(count+offset, 129); //adds 1 blank pixel
 					}else{
 						offset--;
 					}
 					toBlank++;
 					if(length - count > 0){
 						offset++;
-						imageContent.add(scan.getIndex()+offset, (length - count));
-						headPosition = scan.getIndex() + offset;
+						tempContent.add(count+offset, (length - count));
+						headPosition = count+offset;
 					}
 				}else{
-					if(toBlankPosition != 0){
-						imageContent.set(toBlankPosition, 128+toBlank);
+					if(toBlankPosition != -1){
+						tempContent.set(toBlankPosition, 128+toBlank);
 						toBlank=0;
-						toBlankPosition=0;
+						toBlankPosition = -1;
 					}
 					painted++;
 				}
-				if(!scan.hasNextByte()){
-					if(toBlankPosition != 0){
-						imageContent.set(toBlankPosition, 128+toBlank);
-						toBlank=0;
-						toBlankPosition=0;
-					}
-				}
 			}
+			if(toBlankPosition != -1){
+				tempContent.set(toBlankPosition, 128+toBlank);
+				toBlank=0;
+				toBlankPosition = -1;
+			}
+			imageContent.addAll(tempContent);
+			tempContent.clear();
 		}
 		jsp.setSize(imageContent.size(), picID);
 		
@@ -1387,9 +1417,9 @@ public class JSPUtil {
 		int c;
 		while ((c = scan.byteStream()) != -1){
 			int range = c/32;
-			for(int color : colFrom){
-				if (range == color) {
-					imageContent[scan.getIndex()] = transposeRange(c, color);
+			for(int i=0; i<colFrom.length; i++){
+				if (range == colFrom[i]) {
+					imageContent[scan.getIndex()] = transposeRange(c, colTo[i]);
 					break;
 				}
 			}
