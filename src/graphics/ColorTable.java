@@ -14,7 +14,7 @@ public class ColorTable {
 	private BufferedImage colorImage = null;
 
 	public ColorTable(File dir){
-		path = new File(dir.getAbsoluteFile() + "\\" + PALETTE_PATH);
+		path = dir;
 		readPalette();
 	}
 	public ColorTable(String dir){

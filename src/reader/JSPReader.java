@@ -14,12 +14,22 @@ import java.util.List;
 
 public class JSPReader {
 
-	private int imageCountNum=0;
-	private int[] imageCountBytes = new int[2];
-	private List<int[]> imageHeader = new ArrayList<int[]>();
-	private List<int[]> imageContent = new ArrayList<int[]>();
+	private int imageCountNum;
+	private int[] imageCountBytes;
+	private List<int[]> imageHeader;
+	private List<int[]> imageContent;
+	private File jspFile;
 	
+	public void resetReader(){
+		imageCountNum=0;
+		imageCountBytes = new int[2];
+		imageHeader = new ArrayList<int[]>();
+		imageContent = new ArrayList<int[]>();
+		jspFile = null;
+	}
 	public void readJSP(File f) throws IOException{
+		resetReader();
+		jspFile = f;
 		InputStream in = new FileInputStream(f);
 		
 		for(int i=0; i<2; i++){
@@ -45,6 +55,7 @@ public class JSPReader {
 	}
 	
 	public void writeJSP(File f) throws IOException{
+		jspFile = f;
 		OutputStream out = new FileOutputStream(f);
 		for(int i : imageCountBytes){
 			out.write(i);
@@ -63,6 +74,9 @@ public class JSPReader {
 		}
 	}
 	
+	public File getFile(){
+		return jspFile;
+	}
 	public int[] getHeader(int picID){
 		return imageHeader.get(picID);
 	}

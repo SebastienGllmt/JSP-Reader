@@ -459,6 +459,23 @@ public class JSPUtil {
 		}
 	}
 
+	/**
+	 * Recolours all colours to different colours
+	 * @param colTo - The colours to change them to
+	 * @param picID - The index of the image to re-colour
+	 */
+	public void recolorAll(int[] colTo, int picID){
+		allColorsTo(new int[]{0,1,2,3,4,5,6,7}, colTo, picID);
+	}
+	/**
+	 * Recolours all colours to different colours
+	 * @param colTo - The colours to change them to
+	 */
+	public void recolorAll(int[] colTo){
+		for(int i=0; i<jsp.getImageCount(); i++){
+			allColorsTo(new int[]{0,1,2,3,4,5,6,7}, colTo, i);
+		}
+	}
 	/*			Shift methods			*/
 	
 	/**
@@ -1418,7 +1435,7 @@ public class JSPUtil {
 		while ((c = scan.byteStream()) != -1){
 			int range = c/32;
 			for(int i=0; i<colFrom.length; i++){
-				if (range == colFrom[i]) {
+				if (colFrom[i] != colTo[i] && range == colFrom[i]) {
 					imageContent[scan.getIndex()] = transposeRange(c, colTo[i]);
 					break;
 				}
