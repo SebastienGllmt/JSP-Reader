@@ -1,5 +1,8 @@
 package reader;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class JSPScanner {
 
 	private int[] content;
@@ -8,6 +11,7 @@ public class JSPScanner {
 	private int length=0;
 	private int position=0;
 	private int offset=0;
+	private List<Integer> head = new ArrayList<Integer>();
 	
 	public JSPScanner(int[] info){
 		content = info;
@@ -38,7 +42,7 @@ public class JSPScanner {
 	}
 	
 	public boolean hasNext(){
-		if(count+1 < content.length){
+		if(count < content.length){
 			return true;
 		}else{
 			return false;
@@ -55,17 +59,20 @@ public class JSPScanner {
 	
 	public void skipHead(){
 		position=0;
+		head.clear();
 		if(!hasNext()){
 			return;
 		}
 		int value;
 		do{
 			value = next();
+			head.add(value);
 			offset--;
 			offset += value-128;
 		}while(hasNext() && value > 128);
 		offset -= value-128;
 		length = value;
+		head.remove(head.size()-1);
 	}
 	
 	public int getIndex(){
@@ -87,6 +94,9 @@ public class JSPScanner {
 	}
 	public void setLength(int value){
 		length = value;
+	}
+	public List<Integer> getHead(){
+		return head;
 	}
 	
 	public int byteStream(){
