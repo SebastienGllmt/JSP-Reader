@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -1134,7 +1135,7 @@ public class JSPUtil {
 	private void renderTransparent(int minCol, int maxCol, boolean isShade, int picID){
 		int[] contentArray = jsp.getContent(picID);
 		List<Integer> imageContent = new ArrayList<Integer>();
-		List<Integer> tempContent = new ArrayList<Integer>();
+		List<Integer> tempContent = new LinkedList<Integer>();
 		jsp.getContent(picID);
 		JSPScanner scan = new JSPScanner(contentArray);
 		while (scan.hasNext()) {
